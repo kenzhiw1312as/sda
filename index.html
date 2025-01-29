@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semocu - Media Sosial</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e7f3ff;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #00b840;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .post {
+            border-bottom: 1px solid #ddd;
+            padding: 15px 0;
+        }
+        .post:last-child {
+            border-bottom: none;
+        }
+        .post-author {
+            display: flex;
+            align-items: center;
+        }
+        .profile-pic {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        .post-content {
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+        .post-time {
+            color: #888;
+            font-size: 0.9em;
+        }
+        .new-post {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #053b92;
+            border-radius: 5px;
+            background: #f0f8f0;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            border: 1px solid #0dac32;
+            border-radius: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #00b315;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #00b315;
+        }
+        input[type="file"] {
+            margin-top: 10px;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: auto;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            overflow: hidden;
+            border-radius: 5px;
+            background: #000;
+        }
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* Hide video initially */
+        }
+        .profile-info {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .profile-info img {
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+        }
+        .hidden {
+            display: none;
+        }
+        .comment-section {
+            margin-top: 10px;
+        }
+        .comment-input {
+            width: 100%;
+            border-radius: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .comment {
+            border-top: 1px solid #ddd;
+            padding: 8px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        .comment img {
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+        }
+        .comment-content {
+            max-width: 100%;
+            overflow-wrap: break-word;
+        }
+        .authentication {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .authentication input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #03c841;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Selamat Datang di Semocu</h1>
+</header>
+<div class="container hidden" id="authPage">
+    <h2>Masuk atau Daftar</h2>
+    <div class="authentication">
+        <input type="text" id="username" placeholder="Nama Pengguna" required>
+        <input type="password" id="password" placeholder="Kata Sandi" required>
+        <button onclick="login()">Masuk</button>
+        <button onclick="register()">Daftar</button>
+    </div>
+</div>
+<div class="container hidden" id="profilePage">
+    <div class="profile-info">
+        <img id="profileImage" src="default-profile.png" alt="Profil">
+        <h2 id="profileName">Nama Pengguna</h2>
+        <input type="text" id="nameInput" placeholder="Ganti Nama">
+        <input type="file" id="imageUpload" accept="image/*" onchange="updateProfileImage()">
+        <button onclick="updateProfile()">Update Profil</button>
+    </div>
+    <button onclick="showMainPage()">Kembali</button>
+</div>
+<div class="container" id="mainPage">
+    <button onclick="showProfilePage()">Ganti Profil</button>
+    <div class="new-post">
+        <h2>Buat Postingan Baru</h2>
+        <textarea id="postContent" placeholder="Apa yang ada di pikiran Anda...?"></textarea>
+        <br>
+        <input type="file" id="videoUpload" accept="video/*" onchange="checkVideoDuration()">
+        <br>
+        <button onclick="addPost()">Posting</button>
+    </div>
+    <div class="posts" id="posts">
+        <h2>Postingan Terbaru</h2>
+        <!-- Postingan akan ditambahkan di sini -->
+    </div>
+    <button onclick="showAuthPage()">Keluar</button>
+</div>
+<script>
+    let videoDuration = 0; // Variable to store the video duration
+    let videoFile = null; // Variable to store the video file
+    let currentUser = null; // Variable to store the current user
+
+    function checkVideoDuration() {
+        const videoUpload = document.getElementById('videoUpload').files[0];
+
+        if (videoUpload) {
+            const videoElement = document.createElement('video');
+            videoElement.src = URL.createObjectURL(videoUpload);
+            videoElement.addEventListener('loadedmetadata', function() {
+                videoDuration = videoElement.duration,
+                 (videoDuration > 300) 
+                    alert("Video tidak boleh lebih dari 5 menit.");
+                    document.getElementById('videoUpload').value = ""; 
+                    videoDuration = 0; 
+                    videoFile = null;
+                 {
+                    videoFile = videoUpload; 
+                }
+            });
+        }
+    }
+
+    function addPost() {
+        const postContent = document.getElementById('postContent').value;
+
+        if (postContent.trim() === "" && videoDuration === 0) {
+            alert("Silakan masukkan konten postingan atau unggah video.");
+            return;
+        } 
+        const postDiv = document.createElement('div');
+        postDiv.classList.add('post');
+        let likeCount = 0;
+        let dislikeCount = 0;
+        let hasLiked = false;
+        let hasDisliked = false;
+        const profileName = document.getElementById('profileName').innerText;
+        const profileImageSrc = document.getElementById('profileImage').src;
+
+        postDiv.innerHTML = `97606984
+            <div class="post-author"><img src="${profileImageSrc}" alt="Profil" class="profile-pic">${profileName}</div>
+            <div class="post-content">${postContent}</div>
+            <div class="post-time">${new Date().toLocaleString()}</div>
+            <div class="comment-section">
+                <textarea class="comment-input" placeholder="Tambahkan komentar..."></textarea>
+                <button class="comment-button" onclick="addComment(this)">Komentar</button>
+            </div>
+            <div class="comments"></div            <div class="comments"></div>
+            <div class="like-dislike">
+                <button class="like-button" onclick="likePost(this)">Like <span class="like-count">0</span></button>
+                <button class="dislike-button" onclick="dislikePost(this)">Dislike <span class="dislike-count">0</span></button>
+            </div>
+        `;
+
+        if (videoFile && videoDuration <= 300) {
+            const videoURL = URL.createObjectURL(videoFile);
+            const videoContainer = document.createElement('div');
+            videoContainer.classList.add('video-container');
+
+            const videoElement = document.createElement('video');
+            videoElement.src = videoURL;
+            videoElement.controls = true;
+            videoElement.style.display = 'block';
+
+            videoContainer.appendChild(videoElement);
+            postDiv.appendChild(videoContainer);
+        }
+
+        document.getElementById('posts').appendChild(postDiv);
+        document.getElementById('postContent').value = "";
+        document.getElementById('videoUpload').value = "";
+        videoDuration = 0;
+        videoFile = null;
+    }
+
+    function updateProfile() {
+        const nameInput = document.getElementById('nameInput').value.trim();
+        if (nameInput !== "") {
+            document.getElementById('profileName').innerText = nameInput;
+        }
+
+        document.getElementById('nameInput').value = "";
+    }
+
+    function updateProfileImage() {
+        const imageUpload = document.getElementById('imageUpload').files[0];
+        if (imageUpload) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('profileImage').src = e.target.result;
+            };
+            reader.readAsDataURL(imageUpload);
+        }
+    }
+
+    function likePost(button) {
+        const likeCountSpan = button.querySelector('.like-count');
+        let likeCount = parseInt(likeCountSpan.innerText);
+
+        if (button.classList.contains('liked')) {
+            alert("Anda hanya dapat menyukai postingan ini satu kali.");
+            return;
+        }
+
+        likeCount++;
+        likeCountSpan.innerText = likeCount;
+        button.classList.add('liked');
+    }
+
+    function dislikePost(button) {
+        const dislikeCountSpan = button.querySelector('.dislike-count');
+        let dislikeCount = parseInt(dislikeCountSpan.innerText);
+
+        if (button.classList.contains('disliked')) {
+            alert("Anda hanya dapat tidak menyukai postingan ini satu kali.");
+            return;
+        }
+
+        dislikeCount++;
+        dislikeCountSpan.innerText = dislikeCount;
+        button.classList.add('disliked');
+    }
+
+    function addComment(button) {
+        const commentSection = button.parentElement;
+        const commentInput = commentSection.querySelector('.comment-input');
+        const commentText = commentInput.value.trim();
+
+        if (commentText !== "") {
+            const commentsDiv = commentSection.nextElementSibling;
+            const commentDiv = document.createElement('div');
+            commentDiv.classList.add('comment');
+            commentDiv.innerHTML = `
+                <img src="${document.getElementById('profileImage').src}" alt="Profil">
+                <div class="comment-content">${commentText}</div>
+            `;
+            commentsDiv.appendChild(commentDiv);
+            commentInput.value = "";
+        }
+    }
+
+    function showProfilePage() {
+        document.getElementById('mainPage').classList.add('hidden');
+        document.getElementById('profilePage').classList.remove('hidden');
+    }
+
+    function showMainPage() {
+        document.getElementById('mainPage').classList.remove('hidden');
+        document.getElementById('profilePage').classList.add('hidden');
+    }
+
+    function showAuthPage() {
+        document.getElementById('mainPage').classList.add('hidden');
+        document.getElementById('profilePage').classList.add('hidden');
+        document.getElementById('authPage').classList.remove('hidden');
+    }
+
+    function login() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (username === "" || password === "") {
+            alert("Silakan masukkan nama pengguna dan kata sandi.");
+            return;
+        }
+        
+        // Simple authentication check (you can replace this with real authentication logic)
+        if (username === "user" && password === "pass") {
+            alert("Masuk berhasil!");
+            currentUser = username;
+            document.getElementById('profileName').innerText = username;
+            showMainPage();
+        } else {
+            alert("Nama pengguna atau kata sandi salah.");
+        }
+    }
+
+    function register() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (username === "" || password === "") {
+            alert("Silakan masukkan nama pengguna dan kata sandi.");
+            return;
+        }
+
+        // Simple registration logic (you can replace this with real registration logic)
+        alert("Pendaftaran berhasil! Silakan masuk dengan nama pengguna dan kata sandi Anda.");
+        document.getElementById('username').value = "";
+        document.getElementById('password').value = "";
+    }
+</script>
+
+</body>
+</html>
